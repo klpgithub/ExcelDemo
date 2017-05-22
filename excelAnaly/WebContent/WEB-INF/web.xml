@@ -11,7 +11,7 @@
   
   <servlet>
   	<servlet-name>dataAnaly</servlet-name>
-  	<servlet-class>com.data.sync.SyncController</servlet-class>
+  	<servlet-class>com.data.sync.controller.SyncController</servlet-class>
   </servlet>
 	<servlet-mapping>
 		<servlet-name>dataAnaly</servlet-name>

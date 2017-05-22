@@ -1,8 +1,10 @@
-package com.data.sync;
+package com.data.sync.utils;
 
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -16,27 +18,39 @@ import org.apache.commons.fileupload.FileUploadException;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import org.apache.commons.fileupload.util.Streams;
 
+/**
+ * 这个包装类主要为了解决页面上除文件外其他参数接受不到的问题.. 直接把文件上传到本地
+ * 
+ * @author KLP
+ *
+ */
 public class MultipartRequestWrapper extends HttpServletRequestWrapper {
 
 	// 存储参数的集合
 	private Map<String, String[]> params = new HashMap<>();
 
-	private static String PATH = "D://temp"; // 设置上传路径
+	public static String PATH = ReadConfig.getValue("filePath"); // 设置上传路径
 
-	public MultipartRequestWrapper(HttpServletRequest request) {
+	public MultipartRequestWrapper(HttpServletRequest request) throws UnsupportedEncodingException {
 		super(request);
 		setParams(request);// 对request进行解析,并存入map中
 	}
 
 	/**
 	 * 通过StreamingAPI的方式上传文件
+	 * 
+	 * @throws UnsupportedEncodingException
 	 */
-	private void setParams(HttpServletRequest request) {
+	private void setParams(HttpServletRequest request) throws UnsupportedEncodingException {
+		request.setCharacterEncoding("utf-8");
 		// 获取上传文件类型
 		if (ServletFileUpload.isMultipartContent(request)) {
 			// 创建ServletFileUpload实例
 			ServletFileUpload fileUpload = new ServletFileUpload();
 			try {
+				if (!new File(PATH).exists()) {
+					new File(PATH).mkdirs();
+				}
 				// 解析request请求 返回FileItemStream的iterator实例
 				FileItemIterator iter = fileUpload.getItemIterator(request);
 				InputStream is = null;// 输出流
@@ -53,10 +67,8 @@ public class MultipartRequestWrapper extends HttpServletRequestWrapper {
 							Streams.copy(is, new FileOutputStream(PATH + fname), true);// 拷贝内容到上传路径
 							params.put(name, new String[] { fname });// 把文件名设置进request中
 						}
-
 					}
 				}
-
 			} catch (FileUploadException e) {
 				e.printStackTrace();
 			} catch (IOException e) {
