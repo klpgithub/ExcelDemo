@@ -84,7 +84,13 @@ public class SyncController extends HttpServlet {
 			request.setAttribute("success", "");
 			return;
 		}
-		JSONObject config = JSON.parseObject(ReadConfig.getValue(tableName));
+		JSONObject config = null;
+		try {
+			config = JSON.parseObject(ReadConfig.getValue(tableName));
+		} catch (Exception e) {
+			request.setAttribute("error", "配置表JSON结构不符");
+			return;
+		}
 		if (null == config) {
 			request.setAttribute("error", "表的配置信息不存在,请先配置相关信息");
 			request.setAttribute("success", "");
@@ -105,35 +111,33 @@ public class SyncController extends HttpServlet {
 				// 判断第一行指标名称是否一致,如果不一致直接退出,返回错误信息
 				row = sheet.getRow(rowNum);
 				// 最后一列ZBID不为空再进行拼接
-				if (null == row) {
-					request.setAttribute("error", "excel格式有误.");
-					throw new RuntimeException();
-				}
-				if (!getValue(row.getCell(jsonArray.size() - 1)).get("value").toString().equals("")
-						&& getValue(row.getCell(jsonArray.size() - 1)).get("value").toString() != null) {
-					for (int j = 0; j < jsonArray.size(); j++) {
-						Map<String, Object> map = getValue(row.getCell(j));
-						Object value = map.get("value");
-						if (rowNum == 0) {
-							if (!jsonArray.get(j).toString().equalsIgnoreCase((String) value)) {
-								request.setAttribute("error",
-										tableName + "表的配置项" + jsonArray.get(j).toString() + "有误,请检查!");
-								request.setAttribute("success", "");
-								throw new RuntimeException(tableName + "表的配置信息有误,请检查!");
+				if (null != row.getCell(jsonArray.size() - 1)) {
+					if (!getValue(row.getCell(jsonArray.size() - 1)).get("value").toString().equals("")
+							&& getValue(row.getCell(jsonArray.size() - 1)).get("value").toString() != null) {
+						for (int j = 0; j < jsonArray.size(); j++) {
+							Map<String, Object> map = getValue(row.getCell(j));
+							Object value = map.get("value");
+							if (rowNum == 0) {
+								if (!jsonArray.get(j).toString().equalsIgnoreCase((String) value)) {
+									request.setAttribute("error",
+											tableName + "表的配置项" + jsonArray.get(j).toString() + "有误,请检查!");
+									request.setAttribute("success", "");
+									throw new RuntimeException(tableName + "表的配置信息有误,请检查!");
+								}
+							} else if (rowNum >= 2) {
+								value = "\'" + (String) value + "\'";
+								sb.append(",").append(value);
 							}
-						} else if (rowNum >= 2) {
-							value = "\'" + (String) value + "\'";
-							sb.append(",").append(value);
 						}
-					}
-					if (rowNum >= 2) {
-						// 拼接SQL中的数据
-						data.add(sb.toString().substring(1));
+						if (rowNum >= 2) {
+							// 拼接SQL中的数据
+							data.add(sb.toString().substring(1));
+						}
 					}
 				}
 			}
 		}
-		ReadConfig.insertToDB(data, ReadConfig.JSONArrayToString(jsonArray), tableName);
+		ReadConfig.insertToDB(data, jsonArray, tableName);
 	}
 
 	/**

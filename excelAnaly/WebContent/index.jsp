@@ -13,7 +13,12 @@
 		<select name="tableName" >
 			<option value="fact_gjczzhzb">工交处总值汇总表</option>
 			<option value="dim_gjczzhzb">工交处总值汇总表_维表</option>
-			<option value="fact_gjcfdlhyhzb">工交处经济指标汇总表</option>
+			<option value="fact_gjcqxsxshz">区县市销售产值、产销率汇总表</option>
+			<option value="dim_gjcqxshz">区县市销售产值、产销率汇总表_维表</option>
+			<option value="fact_gjcjjzbhz">工交处经济指标汇总表</option>
+			<option value="dim_gjcjjzbhz">工交处经济指标汇总表_维表</option>
+			<option value="fact_gjczycpclhzb">工交处主要产品产量汇总表</option>
+			<option value="dim_gjczycpclhzb">工交处主要产品产量汇总表_维表</option>
 		</select>
 		<span>上传文件:</span>
 		<input id="fileupload" type="file" name="fileName">

@@ -72,28 +72,82 @@ public class ReadConfig {
 	 * @throws SQLException
 	 * @throws ClassNotFoundException
 	 */
-	public static void insertToDB(List<String> datas, String codes, String tableName)
+	public static void insertToDB(List<String> datas, JSONArray array, String tableName)
 			throws SQLException, ClassNotFoundException {
+		String codes = JSONArrayToString(array);
 		Connection conn = null;
 		PreparedStatement ps = null;
 		StringBuilder sb = new StringBuilder();
 		try {
 			conn = getConn();
 			conn.setAutoCommit(false);
-			sb.append(" insert into  ").append(tableName).append(" ( ").append(codes).append(" ) ").append(" values ");
+			String deleteSql = "";
 			for (String data : datas) {
-				sb.append(" ( ").append(data).append(" ) ").append(",");
+				// 汇总表
+				if (tableName.startsWith("fact")) {
+					deleteSql = deleteByBBGAndZBID(data, array, tableName);
+				} else {
+					deleteSql = deleteByBH(data, array, tableName);
+				}
+				ps = conn.prepareStatement(deleteSql);
+				ps.execute();
+				sb.append(" insert into  ").append(tableName).append(" ( ").append(codes).append(" ) ")
+						.append(" values ");
+				sb.append(" ( ").append(data).append(" ) ");
+				String sql = sb.toString();
+				ps = conn.prepareStatement(sql);
+				ps.execute();
+				sb = new StringBuilder();
 			}
-			String sql = sb.toString();
-			sql = sql.substring(0, sql.length() - 1);
-			ps = conn.prepareStatement(sql);
-			ps.execute();
 			conn.commit();
 		} finally {
 			if (null != conn) {
 				conn.close();
 			}
 		}
+	}
+
+	/**
+	 * 汇总表每次添加先根据本次添加的BBQ报告期跟ZBID指标ID进行删除
+	 * 
+	 * @author : KLP
+	 * @return
+	 */
+	public static String deleteByBBGAndZBID(String data, JSONArray array, String tableName) {
+		int ZBIDindex = array.indexOf(array.get(array.size()-1));
+		int BBQindex = array.indexOf("BBQ");
+		String[] rows = data.split(",");
+		StringBuilder sb = new StringBuilder();
+		sb.append("delete from ").append(tableName).append(" where BBQ = ").append(rows[BBQindex])
+				.append(" and  ").append(array.get(array.size()-1)).append(" = ").append(rows[ZBIDindex]);
+		return sb.toString();
+	}
+
+	/**
+	 * 汇总表_维表每次添加先根据本次添加的BH编号进行删除
+	 * 
+	 * @author : KLP
+	 * @return
+	 */
+	public static String deleteByBH(String data, JSONArray array, String tableName) {
+		int BHindex = array.indexOf("BH");
+		String[] rows = data.split(",");
+		StringBuilder sb = new StringBuilder();
+		sb.append("delete from ").append(tableName).append(" where BH = ").append(rows[BHindex]);
+		return sb.toString();
+	}
+
+	public static void main(String[] args) {
+		JSONArray array = new JSONArray();
+		array.add("id");
+		array.add("mc");
+		array.add("BBQ");
+		array.add("ppp");
+		array.add("BH");
+		array.add("ZBID");
+		String sql = deleteByBH("1,'aaa','201505','525252','201701'", array, "table");
+		System.out.println(sql);
+
 	}
 
 	/**
