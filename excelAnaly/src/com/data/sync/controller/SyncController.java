@@ -105,6 +105,10 @@ public class SyncController extends HttpServlet {
 				// 判断第一行指标名称是否一致,如果不一致直接退出,返回错误信息
 				row = sheet.getRow(rowNum);
 				// 最后一列ZBID不为空再进行拼接
+				if (null == row) {
+					request.setAttribute("error", "excel格式有误.");
+					throw new RuntimeException();
+				}
 				if (!getValue(row.getCell(jsonArray.size() - 1)).get("value").toString().equals("")
 						&& getValue(row.getCell(jsonArray.size() - 1)).get("value").toString() != null) {
 					for (int j = 0; j < jsonArray.size(); j++) {
@@ -157,13 +161,13 @@ public class SyncController extends HttpServlet {
 					sdf = new SimpleDateFormat("yyyy-MM-dd");
 				}
 				Date date = cell.getDateCellValue();
-				result = sdf.format(date).toString();
+				result = sdf.format(date).toString().replace(",", "");
 			} else if (cell.getCellStyle().getDataFormat() == 58) {
 				// 处理自定义日期格式：m月d日(通过判断单元格的格式id解决，id的值是58)
 				SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
 				double value = cell.getNumericCellValue();
 				Date date = org.apache.poi.ss.usermodel.DateUtil.getJavaDate(value);
-				result = sdf.format(date).toString();
+				result = sdf.format(date).toString().replace(",", "");
 			} else {
 				double value = cell.getNumericCellValue();
 				CellStyle style = cell.getCellStyle();
@@ -173,7 +177,7 @@ public class SyncController extends HttpServlet {
 				if (temp.equals("General")) {
 					format.applyPattern("#");
 				}
-				result = format.format(value).toString();
+				result = format.format(value).toString().replace(",", "");
 			}
 			map.put("type", 1);
 			break;

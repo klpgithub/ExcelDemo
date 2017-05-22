@@ -103,7 +103,7 @@ public class ReadConfig {
 	 * @return 返回数据为数据表中所有的列名
 	 */
 	public static String JSONArrayToString(JSONArray array) {
-//		array.remove(array.size() - 1);
+		// array.remove(array.size() - 1);
 		String string = array.toString();
 		string = string.substring(1);
 		string = string.substring(0, string.length() - 1).replace("\"", "");
