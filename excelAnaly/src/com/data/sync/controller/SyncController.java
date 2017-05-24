@@ -1,9 +1,9 @@
 package com.data.sync.controller;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.sql.SQLException;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -42,17 +42,22 @@ public class SyncController extends HttpServlet {
 		try {
 			request.setCharacterEncoding("utf-8");
 			response.setCharacterEncoding("utf-8");
-			String ip = request.getRemoteAddr();
-			System.out.println(ip);
+			// String ip = request.getRemoteAddr();
+			// System.out.println(ip);
 			request = new MultipartRequestWrapper(request);
 			String tableName = request.getParameter("tableName");
 			String fileName = request.getParameter("fileName");
+			if (!new File(MultipartRequestWrapper.PATH + fileName).exists()) {
+				request.setAttribute("error", "请选择一个导入的Excel文件");
+				throw new Exception("没有选择上传文件");
+			}
 			InputStream is = new FileInputStream(MultipartRequestWrapper.PATH + fileName);
-			analyExcel(is, fileName, request, tableName);
-			request.setAttribute("success", "数据文件导入成功!");
+			int num = analyExcel(is, fileName, request, tableName);
+			request.setAttribute("success", "数据文件导入成功!本次数据导入条数为:" + num);
 			request.getRequestDispatcher("index.jsp").forward(request, response);
 		} catch (Exception e) {
 			try {
+				request.removeAttribute("success");
 				request.getRequestDispatcher("index.jsp").forward(request, response);
 			} catch (ServletException | IOException e1) {
 				e1.printStackTrace();
@@ -68,12 +73,11 @@ public class SyncController extends HttpServlet {
 	 *            Excel输入流
 	 * @param fileName
 	 *            Excel文件名
-	 * @throws IOException
-	 * @throws SQLException
-	 * @throws ClassNotFoundException
+	 * @return
+	 * @throws Exception
 	 */
-	public static void analyExcel(InputStream is, String fileName, HttpServletRequest request, String tableName)
-			throws IOException, ClassNotFoundException, SQLException {
+	public static int analyExcel(InputStream is, String fileName, HttpServletRequest request, String tableName)
+			throws Exception {
 		Workbook workbook = null;
 		if (fileName.endsWith("xls")) {
 			workbook = new HSSFWorkbook(is);
@@ -81,19 +85,17 @@ public class SyncController extends HttpServlet {
 			workbook = new XSSFWorkbook(is);
 		} else {
 			request.setAttribute("error", "传入的文件格式应为Excel表格,请重新导入...");
-			request.setAttribute("success", "");
-			return;
+			throw new Exception("传入的文件格式应为Excel表格,请重新导入...");
 		}
 		JSONObject config = null;
 		try {
 			config = JSON.parseObject(ReadConfig.getValue(tableName));
 		} catch (Exception e) {
-			request.setAttribute("error", "配置表JSON结构不符");
-			return;
+			request.setAttribute("error", "报表配置JSON格式有误!");
+			throw new RuntimeException("报表配置JSON格式有误!");
 		}
 		if (null == config) {
 			request.setAttribute("error", "表的配置信息不存在,请先配置相关信息");
-			request.setAttribute("success", "");
 			throw new RuntimeException("表的配置信息不存在,请先配置相关信息");
 		}
 		JSONArray jsonArray = config.getJSONArray("code");
@@ -110,6 +112,13 @@ public class SyncController extends HttpServlet {
 				StringBuilder sb = new StringBuilder();
 				// 判断第一行指标名称是否一致,如果不一致直接退出,返回错误信息
 				row = sheet.getRow(rowNum);
+				if (rowNum == 0) {
+					if (row.getPhysicalNumberOfCells() != jsonArray.size()) {
+						request.setAttribute("error", "表结构与Excel文件不匹配");
+						throw new Exception("表结构与Excel文件不匹配");
+					}
+					vilaExcelRow(jsonArray, row, tableName, request);
+				}
 				// 最后一列ZBID不为空再进行拼接
 				if (null != row.getCell(jsonArray.size() - 1)) {
 					if (!getValue(row.getCell(jsonArray.size() - 1)).get("value").toString().equals("")
@@ -118,12 +127,6 @@ public class SyncController extends HttpServlet {
 							Map<String, Object> map = getValue(row.getCell(j));
 							Object value = map.get("value");
 							if (rowNum == 0) {
-								if (!jsonArray.get(j).toString().equalsIgnoreCase((String) value)) {
-									request.setAttribute("error",
-											tableName + "表的配置项" + jsonArray.get(j).toString() + "有误,请检查!");
-									request.setAttribute("success", "");
-									throw new RuntimeException(tableName + "表的配置信息有误,请检查!");
-								}
 							} else if (rowNum >= 2) {
 								value = "\'" + (String) value + "\'";
 								sb.append(",").append(value);
@@ -138,6 +141,28 @@ public class SyncController extends HttpServlet {
 			}
 		}
 		ReadConfig.insertToDB(data, jsonArray, tableName);
+		return data.size();
+	}
+
+	/**
+	 * 根据excel第一行与配置文件进行匹配 匹配失败抛出异常
+	 * 
+	 * @author : KLP
+	 * @param array
+	 * @param row
+	 *            Excel第一行
+	 * @param tableName
+	 * @param request
+	 */
+	public static void vilaExcelRow(JSONArray array, Row row, String tableName, HttpServletRequest request) {
+		for (int j = 0; j < row.getPhysicalNumberOfCells(); j++) {
+			Map<String, Object> map = getValue(row.getCell(j));
+			Object value = map.get("value");
+			if (!array.get(j).toString().equalsIgnoreCase((String) value)) {
+				request.setAttribute("error", tableName + "表的配置项" + array.get(j).toString() + "有误,请检查!");
+				throw new RuntimeException(tableName + "表的配置信息有误,请检查!");
+			}
+		}
 	}
 
 	/**
