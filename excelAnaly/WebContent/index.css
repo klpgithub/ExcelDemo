@@ -39,3 +39,32 @@ h3{ font-size:18px;}
 h4{ font-size:16px;}  
 h5{ font-size:14px;}  
 h6{ font-size:12px;}  
+
+.file {
+    margin-top: 4px;
+    display: inline-block;
+		height: 12px;
+		margin-left: 5px;
+    background: #FFFFFF;
+    border: 0.5px solid #000000;
+    border-radius: 4px;
+    padding: 2px 12px;
+    overflow: hidden;
+    color: #000000;
+    text-decoration: none;
+    text-indent: 0;
+    line-height: 12px;
+}
+.file input {
+    position: absolute;
+    font-size: 100px;
+    right: 0;
+    top: 0;
+    opacity: 0;
+}
+.file:hover {
+    background: gainsboro;
+    border-color: #FFFFFF;
+    color: #FFFFFF;
+    text-decoration: none;
+}

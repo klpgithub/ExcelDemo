@@ -9,7 +9,7 @@
 <link rel="stylesheet" type="text/css" href="index.css"/>
 </head>
 <body>
-	<form method="post" enctype="multipart/form-data" action="analy">
+	<form method="post" enctype="multipart/form-data" action="analy" style="margin-top: 20px;height: 20px;">
 		<span>选择报表:</span>
 		<select name="tableName" >
 			<!-- 汇总表 -->
@@ -39,11 +39,15 @@
 			<option value="fact_sxsjyj">市县数据预警</option>
 			
 		</select>
-		<span>上传文件:</span>
-		<input id="fileupload" type="file" name="fileName">
-		<input type="submit" value="上传" />
-		<span>${error }</span>
-		<span>${success }</span>
+		
+		<a class="file">
+			<input id="fileupload" type="file" name="fileName">选择文件
+			
+		</a>
+
+		<input type="submit" value="上 传" />
+		<span style="color: red;">${error }</span>
+		<span style="color: green;">${success }</span>
 	</form>
 </body>
 </html>
