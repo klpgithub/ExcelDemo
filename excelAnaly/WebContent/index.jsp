@@ -41,8 +41,7 @@
 		</select>
 		
 		<a class="file">
-			<input id="fileupload" type="file" name="fileName">选择文件
-			
+			<input id="fileupload" type="file" name="fileName">
 		</a>
 
 		<input type="submit" value="上 传" />
